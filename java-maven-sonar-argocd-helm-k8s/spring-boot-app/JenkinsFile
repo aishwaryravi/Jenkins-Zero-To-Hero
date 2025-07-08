@@ -36,24 +36,37 @@ pipeline {
         }
       }
     }
-    stage('Update Deployment File') {
-        environment {
-            GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
-            GIT_USER_NAME = "aishwaryravi"
-        }
-        steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+   stage('Update Deployment File') {
+    environment {
+        GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
+        GIT_USER_NAME = "aishwaryravi"
+    }
+    steps {
+        withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+            script {
+                def buildTag = "${BUILD_NUMBER}"
+                def imageName = "raviaishwary9/ultimate-cicd:${buildTag}"
+                def manifestPath = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
+
+                // Git config
                 sh '''
-                    git config user.email "ravi.xyz@gmail.com"
-                    git config user.name "Ravi Aishwary"
-                    BUILD_NUMBER=${BUILD_NUMBER}
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                    git config user.email "aishwary.ravi9@gmail.com"
+                    git config user.name "aishwaryravi"
                 '''
+
+                // Replace image line dynamically
+                sh "sed -i 's|image: raviaishwary9/ultimate-cicd:.*|image: ${imageName}|' ${manifestPath}"
+
+                // Commit and push
+                sh """
+                    git add ${manifestPath}
+                    git commit -m "Update deployment image to version ${buildTag}"
+                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
+                """
             }
         }
     }
-  }
+}
+
+}
 }
